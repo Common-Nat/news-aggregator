@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SortIcon from '@mui/icons-material/Sort';
-import { AppContext } from '../../contexts/AppContext';
+import { AppContext } from '../contexts/AppContext';
 import ArticleList from '../ArticleList/ArticleList';
 import { Link } from 'react-router-dom';
 

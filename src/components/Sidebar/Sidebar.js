@@ -24,7 +24,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { AppContext } from '../../contexts/AppContext';
+import { AppContext } from '../contexts/AppContext';
 import { Link, useLocation } from 'react-router-dom';
 
 const drawerWidth = 256;

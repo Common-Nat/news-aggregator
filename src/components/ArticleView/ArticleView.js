@@ -17,7 +17,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { format, parseISO } from 'date-fns';
-import { AppContext } from '../../contexts/AppContext';
+import { AppContext } from '../contexts/AppContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import ReadabilityTools from '../ReadabilityTools/ReadabilityTools';
