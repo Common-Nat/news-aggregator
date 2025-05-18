@@ -69,7 +69,7 @@ export const createArticleSummary = (text, sentenceCount = 3) => {
   if (!text) return '';
   
   // Split text into sentences - fixed regex with proper escaping
-  const sentences = text.match(/[^\.\!\?]+[\.\!\?]+/g) || [];
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
   
   if (sentences.length <= sentenceCount) {
     return text;
@@ -85,7 +85,7 @@ export const getTextStatistics = (text) => {
   
   const words = text.trim().split(/\s+/).length;
   // Fixed sentence regex pattern with proper escaping
-  const sentences = (text.match(/[^\.\!\?]+[\.\!\?]+/g) || []).length;
+  const sentences = (text.match(/[^.!?]+[.!?]+/g) || []).length;
   // Fixed paragraph regex pattern
   const paragraphs = (text.match(/\n\s*\n/g) || []).length + 1;
   
