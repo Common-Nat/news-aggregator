@@ -140,6 +140,20 @@ const Dashboard = () => {
     navigate('/add-feed');
   };
 
+  // Get all unique categories for filter chips
+  const uniqueCategories = React.useMemo(() => {
+    const categories = articles
+      .map(article => article.category)
+      .filter(Boolean);
+    
+    return [...new Set(categories)].sort();
+  }, [articles]);
+
+  // Handle category chip click
+  const handleCategoryClick = (category) => {
+    navigate(`/?category=${encodeURIComponent(category)}`);
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -157,6 +171,28 @@ const Dashboard = () => {
           </Button>
         )}
       </Box>
+      
+      {/* Statistics summary section */}
+      {articles.length > 0 && !loading && (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle2">Total Articles:</Typography>
+              <Typography variant="h6">{articles.length}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle2">Unread Articles:</Typography>
+              <Typography variant="h6">
+                {articles.filter(article => !article.isRead).length}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant="subtitle2">Feeds:</Typography>
+              <Typography variant="h6">{feeds.length}</Typography>
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
       
       {articles.length === 0 && !loading ? (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
@@ -192,6 +228,27 @@ const Dashboard = () => {
               <Tab label="Search Results" disabled={filter.type !== 'search'} />
             </Tabs>
           </Paper>
+          
+          {/* Category filter chips */}
+          {uniqueCategories.length > 0 && !loading && (
+            <Box sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant="subtitle2" sx={{ mr: 1, alignSelf: 'center' }}>
+                Filter by category:
+              </Typography>
+              {uniqueCategories.map(category => (
+                <Chip
+                  key={category}
+                  label={category}
+                  onClick={() => handleCategoryClick(category)}
+                  color={filter.type === 'category' && filter.value === category ? 'primary' : 'default'}
+                  variant={filter.type === 'category' && filter.value === category ? 'filled' : 'outlined'}
+                  size="small"
+                />
+              ))}
+            </Box>
+          )}
+          
+          <Divider sx={{ my: 2 }} />
           
           {loading && articles.length === 0 ? (
             // Loading skeleton

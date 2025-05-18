@@ -13,6 +13,9 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SortIcon from '@mui/icons-material/Sort';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import CategoryIcon from '@mui/icons-material/Category';
 import { AppContext } from '../../contexts/AppContext';
 import ArticleList from '../ArticleList/ArticleList';
 import { Link } from 'react-router-dom';
@@ -82,6 +85,24 @@ const Bookmarks = () => {
       });
     }
   };
+  
+  // Get stats for bookmarked articles
+  const bookmarkStats = React.useMemo(() => {
+    const totalBookmarks = articles.filter(article => article.isBookmarked).length;
+    const categoryCounts = {};
+    
+    articles.forEach(article => {
+      if (article.isBookmarked && article.category) {
+        categoryCounts[article.category] = (categoryCounts[article.category] || 0) + 1;
+      }
+    });
+    
+    const topCategory = Object.entries(categoryCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([category]) => category)[0];
+      
+    return { total: totalBookmarks, topCategory };
+  }, [articles]);
 
   return (
     <Box>
@@ -116,6 +137,49 @@ const Bookmarks = () => {
         </Box>
       </Box>
       
+      {bookmarkedArticles.length > 0 && (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item>
+              <Chip 
+                icon={<BookmarkIcon />} 
+                label={`${bookmarkStats.total} Bookmarks`} 
+                color="primary"
+              />
+            </Grid>
+            
+            {bookmarkStats.topCategory && (
+              <>
+                <Grid item>
+                  <Divider orientation="vertical" flexItem />
+                </Grid>
+                <Grid item>
+                  <Chip 
+                    icon={<CategoryIcon />} 
+                    label={`Most bookmarked: ${bookmarkStats.topCategory}`}
+                    variant="outlined" 
+                  />
+                </Grid>
+              </>
+            )}
+            
+            <Grid item xs />
+            
+            <Grid item>
+              <IconButton
+                color="primary"
+                onClick={() => setFilterValue('all')}
+                disabled={filterValue === 'all'}
+                size="small"
+                title="Show all"
+              >
+                <FilterListIcon />
+              </IconButton>
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
+      
       {bookmarkedArticles.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="h6" gutterBottom>
@@ -147,6 +211,8 @@ const Bookmarks = () => {
               </Tabs>
             </Paper>
           )}
+          
+          <Divider sx={{ mb: 3 }} />
           
           <ArticleList articles={bookmarkedArticles} />
           

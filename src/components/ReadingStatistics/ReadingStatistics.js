@@ -24,7 +24,7 @@ import {
   LineElement,
   TimeScale
 } from 'chart.js';
-import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import { format, subDays, parseISO, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
 import 'chartjs-adapter-date-fns';
 
@@ -56,7 +56,7 @@ const ReadingStatistics = () => {
   useEffect(() => {
     // Process data for visualizations
     processData();
-  }, [articles, statistics]);
+  }, [articles, statistics, processData]);
   
   const processData = () => {
     // 1. Category breakdown data for pie chart

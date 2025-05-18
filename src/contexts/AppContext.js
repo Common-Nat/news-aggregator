@@ -1,5 +1,5 @@
 // src/contexts/AppContext.js
-import React, { createContext, useReducer, useEffect } from 'react';
+import React, { createContext, useReducer, useEffect, useCallback } from 'react';
 import { openDB } from 'idb';
 
 // Create context
@@ -109,6 +109,10 @@ function appReducer(state, action) {
       return { ...state, categories: [...state.categories, action.payload] };
     case 'REMOVE_CATEGORY':
       return { ...state, categories: state.categories.filter(cat => cat.id !== action.payload) };
+    case 'SET_STATISTICS':
+      return { ...state, statistics: action.payload };
+    case 'SET_BOOKMARKS':
+      return { ...state, bookmarks: action.payload };
     case 'UPDATE_READING_PREFERENCES':
       return { 
         ...state, 
@@ -120,6 +124,8 @@ function appReducer(state, action) {
       return { ...state, error: action.payload };
     case 'CLEAR_ERROR':
       return { ...state, error: null };
+    case 'SET_NOTIFICATION':
+      return { ...state, notification: action.payload };
     default:
       return state;
   }
@@ -145,100 +151,109 @@ const initDB = async () => {
 export const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        dispatch({ type: 'SET_LOADING', payload: true });
-        
-        const db = await initDB();
-        
-        // Load feeds
-        const feeds = await db.getAll('feeds');
-        if (feeds.length) {
-          dispatch({ type: 'SET_FEEDS', payload: feeds });
-        }
-        
-        // Load articles
-        const articles = await db.getAll('articles');
-        if (articles.length) {
-          dispatch({ type: 'SET_ARTICLES', payload: articles });
-        }
-        
-        // Load categories
-        const categories = await db.getAll('categories');
-        if (categories.length) {
-          dispatch({ type: 'SET_CATEGORIES', payload: categories });
-        }
-        
-        // Load bookmarks
-        const bookmarks = await db.getAll('bookmarks');
-        if (bookmarks.length) {
-          dispatch({ type: 'SET_BOOKMARKS', payload: bookmarks.map(b => b.id) });
-        }
-        
-        // Load statistics
-        const statistics = await db.get('statistics', 'user-stats');
-        if (statistics) {
-          dispatch({ type: 'SET_STATISTICS', payload: statistics });
-        }
-        
-        // Load preferences
-        const preferences = await db.get('preferences', 'reading-preferences');
-        if (preferences) {
-          dispatch({ type: 'UPDATE_READING_PREFERENCES', payload: preferences });
-        }
-        
-        dispatch({ type: 'SET_LOADING', payload: false });
-      } catch (error) {
-        console.error('Failed to load initial data:', error);
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to load application data' });
-        dispatch({ type: 'SET_LOADING', payload: false });
+  // Use useCallback for functions that will be dependency in useEffects
+  const loadInitialData = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const db = await initDB();
+      
+      // Load feeds
+      const feeds = await db.getAll('feeds');
+      if (feeds.length) {
+        dispatch({ type: 'SET_FEEDS', payload: feeds });
       }
-    };
-    
-    loadInitialData();
+      
+      // Load articles
+      const articles = await db.getAll('articles');
+      if (articles.length) {
+        dispatch({ type: 'SET_ARTICLES', payload: articles });
+      }
+      
+      // Load categories
+      const categories = await db.getAll('categories');
+      if (categories.length) {
+        dispatch({ type: 'SET_CATEGORIES', payload: categories });
+      }
+      
+      // Load bookmarks
+      const bookmarks = await db.getAll('bookmarks');
+      if (bookmarks.length) {
+        dispatch({ type: 'SET_BOOKMARKS', payload: bookmarks.map(b => b.id) });
+      }
+      
+      // Load statistics
+      const statistics = await db.get('statistics', 'user-stats');
+      if (statistics) {
+        dispatch({ type: 'SET_STATISTICS', payload: statistics });
+      }
+      
+      // Load preferences
+      const preferences = await db.get('preferences', 'reading-preferences');
+      if (preferences) {
+        dispatch({ type: 'UPDATE_READING_PREFERENCES', payload: preferences });
+      }
+      
+      dispatch({ type: 'SET_LOADING', payload: false });
+    } catch (error) {
+      console.error('Failed to load initial data:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load application data' });
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
   }, []);
+  
+  // Load data on initial render
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
 
   // Save state changes to IndexedDB
-  useEffect(() => {
-    const saveStateToIndexedDB = async () => {
-      if (state.loading) return; // Don't save while loading initial data
-      
-      try {
-        const db = await initDB();
-        
-        // Save feeds
-        const tx = db.transaction('feeds', 'readwrite');
-        await Promise.all(state.feeds.map(feed => tx.store.put(feed)));
-        await tx.done;
-        
-        // Save articles (only keep the most recent 1000 to avoid storage limits)
-        const articlesTx = db.transaction('articles', 'readwrite');
-        const sortedArticles = [...state.articles]
-          .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
-          .slice(0, 1000);
-        await Promise.all(sortedArticles.map(article => articlesTx.store.put(article)));
-        await articlesTx.done;
-        
-        // Save other data...
-        await db.put('statistics', state.statistics, 'user-stats');
-        await db.put('preferences', state.readingPreferences, 'reading-preferences');
-        
-        // Save bookmarks
-        const bookmarksTx = db.transaction('bookmarks', 'readwrite');
-        await bookmarksTx.store.clear(); // Clear existing
-        await Promise.all(state.bookmarks.map(id => 
-          bookmarksTx.store.put({ id, date: new Date().toISOString() })
-        ));
-        await bookmarksTx.done;
-        
-      } catch (error) {
-        console.error('Failed to save state to IndexedDB:', error);
-      }
-    };
+  const saveStateToIndexedDB = useCallback(async () => {
+    if (state.loading) return; // Don't save while loading initial data
     
+    try {
+      const db = await initDB();
+      
+      // Save feeds
+      const tx = db.transaction('feeds', 'readwrite');
+      await Promise.all(state.feeds.map(feed => tx.store.put(feed)));
+      await tx.done;
+      
+      // Save articles (only keep the most recent 1000 to avoid storage limits)
+      const articlesTx = db.transaction('articles', 'readwrite');
+      const sortedArticles = [...state.articles]
+        .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
+        .slice(0, 1000);
+      await Promise.all(sortedArticles.map(article => articlesTx.store.put(article)));
+      await articlesTx.done;
+      
+      // Save categories
+      const categoriesTx = db.transaction('categories', 'readwrite');
+      await Promise.all(state.categories.map(category => categoriesTx.store.put(category)));
+      await categoriesTx.done;
+      
+      // Save statistics
+      await db.put('statistics', state.statistics, 'user-stats');
+      
+      // Save reading preferences
+      await db.put('preferences', state.readingPreferences, 'reading-preferences');
+      
+      // Save bookmarks
+      const bookmarksTx = db.transaction('bookmarks', 'readwrite');
+      await bookmarksTx.store.clear(); // Clear existing
+      await Promise.all(state.bookmarks.map(id => 
+        bookmarksTx.store.put({ id, date: new Date().toISOString() })
+      ));
+      await bookmarksTx.done;
+      
+    } catch (error) {
+      console.error('Failed to save state to IndexedDB:', error);
+    }
+  }, [state.feeds, state.articles, state.categories, state.bookmarks, state.statistics, state.readingPreferences, state.loading]);
+
+  useEffect(() => {
     saveStateToIndexedDB();
-  }, [state.feeds, state.articles, state.categories, state.bookmarks, state.statistics, state.readingPreferences]);
+  }, [saveStateToIndexedDB]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

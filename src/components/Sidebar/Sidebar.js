@@ -11,7 +11,8 @@ import {
   Collapse,
   IconButton,
   Tooltip,
-  Typography
+  Badge,
+  Avatar
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import HomeIcon from '@mui/icons-material/Home';
@@ -24,6 +25,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CategoryIcon from '@mui/icons-material/Category';
 import { AppContext } from '../../contexts/AppContext';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -37,9 +39,17 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   justifyContent: 'flex-end',
 }));
 
+// Category item with custom styling
+const CategoryAvatar = styled(Avatar)(({ theme }) => ({
+  width: 24,
+  height: 24,
+  backgroundColor: theme.palette.primary.main,
+  fontSize: '0.75rem',
+}));
+
 const Sidebar = ({ open, onClose }) => {
   const { state } = useContext(AppContext);
-  const { feeds, categories } = state;
+  const { feeds, categories, articles } = state;
   const location = useLocation();
   
   const [feedsOpen, setFeedsOpen] = React.useState(true);
@@ -53,6 +63,7 @@ const Sidebar = ({ open, onClose }) => {
     setCategoriesOpen(!categoriesOpen);
   };
   
+  // Organize feeds by category for feed list
   const groupedFeeds = React.useMemo(() => {
     const grouped = {};
     
@@ -66,6 +77,33 @@ const Sidebar = ({ open, onClose }) => {
     
     return grouped;
   }, [feeds]);
+
+  // Count unread articles by category
+  const categoryUnreadCounts = React.useMemo(() => {
+    const counts = {};
+    
+    articles.forEach(article => {
+      if (!article.isRead) {
+        const category = article.category || 'Uncategorized';
+        counts[category] = (counts[category] || 0) + 1;
+      }
+    });
+    
+    return counts;
+  }, [articles]);
+
+  // Count unread articles by feed
+  const feedUnreadCounts = React.useMemo(() => {
+    const counts = {};
+    
+    articles.forEach(article => {
+      if (!article.isRead && article.feedId) {
+        counts[article.feedId] = (counts[article.feedId] || 0) + 1;
+      }
+    });
+    
+    return counts;
+  }, [articles]);
   
   const drawer = (
     <>
@@ -84,7 +122,13 @@ const Sidebar = ({ open, onClose }) => {
         <ListItem component={Link} to="/bookmarks" disablePadding>
           <ListItemButton selected={location.pathname === '/bookmarks'}>
             <ListItemIcon>
-              <BookmarkIcon />
+              <Badge 
+                color="secondary" 
+                badgeContent={articles.filter(article => article.isBookmarked).length}
+                showZero={false}
+              >
+                <BookmarkIcon />
+              </Badge>
             </ListItemIcon>
             <ListItemText primary="Bookmarks" />
           </ListItemButton>
@@ -115,7 +159,7 @@ const Sidebar = ({ open, onClose }) => {
         <ListItem>
           <ListItemButton onClick={handleToggleCategories}>
             <ListItemIcon>
-              <FolderIcon />
+              <CategoryIcon />
             </ListItemIcon>
             <ListItemText primary="Categories" />
             {categoriesOpen ? <ExpandLess /> : <ExpandMore />}
@@ -124,20 +168,57 @@ const Sidebar = ({ open, onClose }) => {
         
         <Collapse in={categoriesOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
-            {Object.keys(groupedFeeds).sort().map(category => (
-              <ListItem key={category} disablePadding>
+            {categories.map(category => (
+              <ListItem key={category.id} disablePadding>
                 <ListItemButton 
                   component={Link} 
-                  to={`/?category=${encodeURIComponent(category)}`}
+                  to={`/?category=${encodeURIComponent(category.name)}`}
                   sx={{ pl: 4 }}
                 >
                   <ListItemIcon>
-                    <FolderIcon fontSize="small" />
+                    {categoryUnreadCounts[category.name] ? (
+                      <Badge 
+                        color="error" 
+                        badgeContent={categoryUnreadCounts[category.name]}
+                      >
+                        <FolderIcon fontSize="small" />
+                      </Badge>
+                    ) : (
+                      <FolderIcon fontSize="small" />
+                    )}
                   </ListItemIcon>
-                  <ListItemText primary={category} />
+                  <ListItemText 
+                    primary={category.name}
+                  />
+                  <CategoryAvatar>{category.name.charAt(0).toUpperCase()}</CategoryAvatar>
                 </ListItemButton>
               </ListItem>
             ))}
+            
+            {/* For feeds with uncategorized category */}
+            {groupedFeeds['Uncategorized'] && (
+              <ListItem disablePadding>
+                <ListItemButton 
+                  component={Link} 
+                  to={`/?category=Uncategorized`}
+                  sx={{ pl: 4 }}
+                >
+                  <ListItemIcon>
+                    {categoryUnreadCounts['Uncategorized'] ? (
+                      <Badge 
+                        color="error" 
+                        badgeContent={categoryUnreadCounts['Uncategorized']}
+                      >
+                        <FolderIcon fontSize="small" />
+                      </Badge>
+                    ) : (
+                      <FolderIcon fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText primary="Uncategorized" />
+                </ListItemButton>
+              </ListItem>
+            )}
           </List>
         </Collapse>
         
@@ -171,9 +252,23 @@ const Sidebar = ({ open, onClose }) => {
                   to={`/?feed=${encodeURIComponent(feed.id)}`}
                   sx={{ pl: 4 }}
                 >
+                  <ListItemIcon>
+                    {feedUnreadCounts[feed.id] ? (
+                      <Badge 
+                        color="error" 
+                        badgeContent={feedUnreadCounts[feed.id]}
+                      >
+                        <FeedIcon fontSize="small" />
+                      </Badge>
+                    ) : (
+                      <FeedIcon fontSize="small" />
+                    )}
+                  </ListItemIcon>
                   <ListItemText 
                     primary={feed.title} 
                     primaryTypographyProps={{ noWrap: true }}
+                    secondary={feed.category || 'Uncategorized'}
+                    secondaryTypographyProps={{ noWrap: true, variant: 'caption' }}
                   />
                 </ListItemButton>
               </ListItem>

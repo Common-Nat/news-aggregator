@@ -29,6 +29,7 @@ const Recommendations = () => {
   const [recommendations, setRecommendations] = useState([]);
   const [categoryRecommendations, setCategoryRecommendations] = useState({});
   const [tabValue, setTabValue] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   
   useEffect(() => {
     // Generate recommendations when articles change
@@ -45,6 +46,7 @@ const Recommendations = () => {
   
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+    setSelectedCategory(null); // Reset category filter when changing tabs
   };
   
   const handleArticleClick = (articleId) => {
@@ -57,6 +59,10 @@ const Recommendations = () => {
   const toggleBookmark = (e, articleId) => {
     e.stopPropagation(); // Prevent navigating to article
     dispatch({ type: 'TOGGLE_BOOKMARK', payload: articleId });
+  };
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category === selectedCategory ? null : category);
   };
   
   const ArticleCard = ({ article }) => (
@@ -148,39 +154,110 @@ const Recommendations = () => {
         <Box sx={{ p: 3 }}>
           {tabValue === 0 && (
             <>
-              <Typography variant="h6" gutterBottom>
-                Based on Your Reading History
-              </Typography>
-              {recommendations.length > 0 ? (
-                recommendations.map(article => (
-                  <ArticleCard key={article.id} article={article} />
-                ))
-              ) : (
-                <Typography variant="body1" sx={{ textAlign: 'center', py: 4 }}>
-                  No recommendations available yet. Start reading some articles to get personalized recommendations!
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                <Typography variant="h6">
+                  Based on Your Reading History
                 </Typography>
+                
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={() => {
+                    // Refresh recommendations
+                    const readArticles = articles.filter(article => article.isRead);
+                    const generatedRecommendations = getRecommendations(articles, readArticles);
+                    setRecommendations(generatedRecommendations);
+                  }}
+                >
+                  Refresh
+                </Button>
+              </Box>
+
+              {recommendations.length > 0 ? (
+                <Grid container spacing={2}>
+                  {recommendations.map(article => (
+                    <Grid item xs={12} key={article.id}>
+                      <ArticleCard article={article} />
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography variant="body1" sx={{ py: 2 }}>
+                    No recommendations available yet. Start reading some articles to get personalized recommendations!
+                  </Typography>
+                  <Button variant="contained" color="primary" href="/#/">
+                    Browse Articles
+                  </Button>
+                </Paper>
               )}
             </>
           )}
           
           {tabValue === 1 && (
             <>
+              {Object.keys(categoryRecommendations).length > 0 && (
+                <Box sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {Object.keys(categoryRecommendations).map(category => (
+                    <Chip 
+                      key={category}
+                      label={category} 
+                      onClick={() => handleCategorySelect(category)}
+                      color={selectedCategory === category ? "primary" : "default"} 
+                      variant={selectedCategory === category ? "filled" : "outlined"} 
+                    />
+                  ))}
+                </Box>
+              )}
+              
+              <Divider sx={{ my: 2 }} />
+              
               {Object.keys(categoryRecommendations).length > 0 ? (
-                Object.entries(categoryRecommendations).map(([category, articles]) => (
-                  <Box key={category} sx={{ mb: 4 }}>
-                    <Typography variant="h6" gutterBottom>
-                      {category}
-                    </Typography>
-                    {articles.slice(0, 3).map(article => (
-                      <ArticleCard key={article.id} article={article} />
-                    ))}
-                    <Divider />
-                  </Box>
-                ))
+                <>
+                  {(selectedCategory ? [selectedCategory] : Object.keys(categoryRecommendations)).map(category => (
+                    <Box key={category} sx={{ mb: 4 }}>
+                      <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                        <Chip 
+                          label={category} 
+                          color="primary" 
+                          size="small" 
+                          sx={{ mr: 1 }} 
+                        />
+                        {categoryRecommendations[category].length} Recommendations
+                      </Typography>
+                      
+                      <Grid container spacing={2}>
+                        {categoryRecommendations[category].slice(0, 3).map(article => (
+                          <Grid item xs={12} key={article.id}>
+                            <ArticleCard article={article} />
+                          </Grid>
+                        ))}
+                      </Grid>
+                      
+                      {categoryRecommendations[category].length > 3 && (
+                        <Box sx={{ textAlign: 'center', mt: 2 }}>
+                          <Button 
+                            variant="outlined" 
+                            size="small"
+                            onClick={() => handleArticleClick(categoryRecommendations[category][3].id)}
+                          >
+                            View More in {category}
+                          </Button>
+                        </Box>
+                      )}
+                      <Divider sx={{ my: 3 }} />
+                    </Box>
+                  ))}
+                </>
               ) : (
-                <Typography variant="body1" sx={{ textAlign: 'center', py: 4 }}>
-                  No category recommendations available. Try adding more feeds in different categories.
-                </Typography>
+                <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography variant="body1" sx={{ py: 2 }}>
+                    No category recommendations available. Try adding more feeds in different categories.
+                  </Typography>
+                  <Button variant="contained" color="primary" href="/#/settings">
+                    Manage Feeds
+                  </Button>
+                </Paper>
               )}
             </>
           )}
