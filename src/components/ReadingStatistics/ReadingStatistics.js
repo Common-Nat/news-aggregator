@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { AppContext } from '../../contexts/AppContext';
 import {
   Box,
@@ -53,29 +53,8 @@ const ReadingStatistics = () => {
   const [readingStreak, setReadingStreak] = useState(0);
   const [topCategories, setTopCategories] = useState([]);
   
-  useEffect(() => {
-    // Process data for visualizations
-    processData();
-  }, [articles, statistics, processData]);
-  
-  const processData = () => {
-    // 1. Category breakdown data for pie chart
-    processCategoryData();
-    
-    // 2. Time of day reading habits
-    processTimeOfDayData();
-    
-    // 3. Daily reading tracking for line chart
-    processDailyReadingData();
-    
-    // 4. Calculate reading streak
-    calculateReadingStreak();
-    
-    // 5. Get top categories
-    getTopCategories();
-  };
-  
-  const processCategoryData = () => {
+  // Use useCallback to memoize the processData function
+  const processCategoryData = useCallback(() => {
     const categoryCounts = {};
     const categoryColors = {};
     const colorPalette = [
@@ -109,9 +88,9 @@ const ReadingStatistics = () => {
         }
       ]
     });
-  };
+  }, [articles]);
   
-  const processTimeOfDayData = () => {
+  const processTimeOfDayData = useCallback(() => {
     const hourCounts = Array(24).fill(0);
     
     // Count articles by hour of day they were read
@@ -134,9 +113,9 @@ const ReadingStatistics = () => {
         }
       ]
     });
-  };
+  }, [articles]);
   
-  const processDailyReadingData = () => {
+  const processDailyReadingData = useCallback(() => {
     // Get reading data for the last 14 days
     const today = new Date();
     const twoWeeksAgo = subDays(today, 13);
@@ -185,9 +164,9 @@ const ReadingStatistics = () => {
         }
       ]
     });
-  };
+  }, [articles]);
   
-  const calculateReadingStreak = () => {
+  const calculateReadingStreak = useCallback(() => {
     // Get all read dates
     const readDates = articles
       .filter(article => article.isRead && article.readDate)
@@ -219,9 +198,9 @@ const ReadingStatistics = () => {
     }
     
     setReadingStreak(streak);
-  };
+  }, [articles]);
   
-  const getTopCategories = () => {
+  const getTopCategories = useCallback(() => {
     const categoryCounts = {};
     
     // Count articles by category
@@ -237,7 +216,36 @@ const ReadingStatistics = () => {
       .map(([category, count]) => ({ category, count }));
     
     setTopCategories(sortedCategories);
-  };
+  }, [articles]);
+  
+  // Memoize the processData function to avoid infinite loops
+  const processData = useCallback(() => {
+    // 1. Category breakdown data for pie chart
+    processCategoryData();
+    
+    // 2. Time of day reading habits
+    processTimeOfDayData();
+    
+    // 3. Daily reading tracking for line chart
+    processDailyReadingData();
+    
+    // 4. Calculate reading streak
+    calculateReadingStreak();
+    
+    // 5. Get top categories
+    getTopCategories();
+  }, [
+    processCategoryData,
+    processTimeOfDayData,
+    processDailyReadingData,
+    calculateReadingStreak,
+    getTopCategories
+  ]);
+  
+  // Now use the memoized function in useEffect
+  useEffect(() => {
+    processData();
+  }, [processData, articles, statistics]);
   
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);

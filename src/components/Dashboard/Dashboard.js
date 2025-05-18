@@ -23,7 +23,8 @@ const useQuery = () => {
 };
 
 const Dashboard = () => {
-  const { state, dispatch } = useContext(AppContext);
+  // Remove dispatch since it's not being used in this component
+  const { state } = useContext(AppContext);
   const { articles, feeds, loading } = state;
   const navigate = useNavigate();
   const theme = useTheme();
@@ -42,6 +43,7 @@ const Dashboard = () => {
     const search = query.get('search');
     const category = query.get('category');
     const feedId = query.get('feed');
+    const view = query.get('view');
     
     if (search) {
       setFilter({ type: 'search', value: search });
@@ -52,6 +54,9 @@ const Dashboard = () => {
     } else if (feedId) {
       setFilter({ type: 'feed', value: feedId });
       setTabValue(2);
+    } else if (view === 'unread') {
+      setFilter({ type: 'unread', value: null });
+      setTabValue(1);
     } else {
       setFilter({ type: 'all', value: null });
       setTabValue(0);
@@ -96,7 +101,7 @@ const Dashboard = () => {
         navigate('/');
         setFilter({ type: 'all', value: null });
         break;
-      case 1: // Categories
+      case 1: // Unread
         setFilter({ type: 'unread', value: null });
         navigate('/?view=unread');
         break;

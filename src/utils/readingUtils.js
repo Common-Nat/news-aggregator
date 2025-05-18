@@ -66,8 +66,10 @@ export const stopReadingTimeTracking = () => {
 
 // Create a summary of an article
 export const createArticleSummary = (text, sentenceCount = 3) => {
-  // Split text into sentences
-  const sentences = text.match(/[^\.!\?]+[\.!\?]+/g) || [];
+  if (!text) return '';
+  
+  // Split text into sentences - fixed regex with proper escaping
+  const sentences = text.match(/[^\.\!\?]+[\.\!\?]+/g) || [];
   
   if (sentences.length <= sentenceCount) {
     return text;
@@ -79,8 +81,12 @@ export const createArticleSummary = (text, sentenceCount = 3) => {
 
 // Get text statistics
 export const getTextStatistics = (text) => {
+  if (!text) return { wordCount: 0, sentenceCount: 0, paragraphCount: 0, averageWordsPerSentence: 0 };
+  
   const words = text.trim().split(/\s+/).length;
-  const sentences = (text.match(/[^\.!\?]+[\.!\?]+/g) || []).length;
+  // Fixed sentence regex pattern with proper escaping
+  const sentences = (text.match(/[^\.\!\?]+[\.\!\?]+/g) || []).length;
+  // Fixed paragraph regex pattern
   const paragraphs = (text.match(/\n\s*\n/g) || []).length + 1;
   
   return {
@@ -89,4 +95,56 @@ export const getTextStatistics = (text) => {
     paragraphCount: paragraphs,
     averageWordsPerSentence: sentences > 0 ? Math.round(words / sentences) : 0
   };
+};
+
+// New function: Calculate reading difficulty (Flesch-Kincaid Grade Level)
+export const calculateReadingDifficulty = (text) => {
+  if (!text) return { score: 0, level: 'Unknown' };
+  
+  const stats = getTextStatistics(text);
+  const { wordCount, sentenceCount } = stats;
+  
+  if (wordCount === 0 || sentenceCount === 0) return { score: 0, level: 'Unknown' };
+  
+  // Count syllables (simplified approach)
+  const syllableCount = countSyllables(text);
+  
+  // Flesch-Kincaid Grade Level formula
+  const score = 0.39 * (wordCount / sentenceCount) + 11.8 * (syllableCount / wordCount) - 15.59;
+  const roundedScore = Math.round(score * 10) / 10;
+  
+  // Determine reading level
+  let level = 'Unknown';
+  if (score <= 5) level = 'Very Easy';
+  else if (score <= 8) level = 'Easy';
+  else if (score <= 12) level = 'Moderate';
+  else if (score <= 15) level = 'Difficult';
+  else level = 'Very Difficult';
+  
+  return { score: roundedScore, level };
+};
+
+// Helper function to count syllables (simplified)
+const countSyllables = (text) => {
+  const words = text.toLowerCase().split(/\s+/);
+  let count = 0;
+  
+  words.forEach(word => {
+    // Remove non-alphabetic characters
+    word = word.replace(/[^a-z]/g, '');
+    
+    // Count vowel groups as syllables
+    const syllables = word.match(/[aeiouy]+/g) || [];
+    let syllableCount = syllables.length;
+    
+    // Adjust for common patterns
+    if (word.length > 3 && word.endsWith('e') && !word.endsWith('le')) {
+      syllableCount--;
+    }
+    
+    // Every word has at least one syllable
+    count += Math.max(1, syllableCount);
+  });
+  
+  return count;
 };
