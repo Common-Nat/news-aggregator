@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-globals */
 // This service worker enables offline functionality and caching for the app
 
 const CACHE_NAME = 'news-aggregator-cache-v1';
