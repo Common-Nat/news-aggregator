@@ -12,7 +12,7 @@ import {
   Snackbar,
   Stack
 } from '@mui/material';
-import { AppContext } from '../contexts/AppContext';
+import { AppContext } from '../../contexts/AppContext';
 import { fetchFeed } from '../../services/feedService';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';

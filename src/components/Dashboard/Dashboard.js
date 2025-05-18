@@ -13,7 +13,7 @@ import {
   useMediaQuery
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { AppContext } from '../contexts/AppContext';
+import { AppContext } from '../../contexts/AppContext';
 import ArticleList from '../ArticleList/ArticleList';
 import { useNavigate, useLocation } from 'react-router-dom';
 

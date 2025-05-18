@@ -15,7 +15,7 @@ import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { format, parseISO } from 'date-fns';
-import { AppContext } from '../contexts/AppContext';
+import { AppContext } from '../../contexts/AppContext';
 import { formatReadingTime } from '../../utils/readingUtils';
 import { useNavigate } from 'react-router-dom';
 
